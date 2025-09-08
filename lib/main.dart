@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'api_service.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -351,15 +353,23 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     super.dispose();
   }
 
-  void _sendMessage(String text) {
+void _sendMessage(String text) async { // async 추가
     if (text.trim().isEmpty) return;
     FocusScope.of(context).unfocus();
+    _controller.clear();
 
+    // 1. 사용자 메시지를 먼저 화면에 표시
     setState(() {
       _messages.add({'text': text, 'isUser': true});
-      _messages.add({'text': '답변을 준비하고 있어요...', 'isUser': false});
     });
-    _controller.clear();
+
+    // 2. ApiService를 통해 서버로 메시지 전송 및 응답 받기
+    final botReply = await ApiService.sendMessageToChatbot(text);
+    
+    // 3. 서버로부터 받은 답변을 화면에 표시
+    setState(() {
+      _messages.add({'text': botReply, 'isUser': false});
+    });
   }
 
   @override
@@ -895,3 +905,4 @@ class SearchResultsScreen extends StatelessWidget {
     );
   }
 }
+
