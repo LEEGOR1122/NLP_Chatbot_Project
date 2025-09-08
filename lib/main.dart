@@ -15,12 +15,25 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: '손에 보험',
       theme: ThemeData(
-        primarySwatch: Colors.grey,
-        scaffoldBackgroundColor: Colors.grey[100],
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
+        fontFamily: GoogleFonts.notoSansKr().fontFamily,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 1,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
       home: const SplashScreen(),
@@ -51,32 +64,45 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/OIG3.jpg',
-            fit: BoxFit.cover,
-          ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('내 손에 보험', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 60),
-                Text('당신은 적절한 보상을 받으셨나요?', style: GoogleFonts.notoSans(fontSize: 25, color: Colors.white, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 20),
-                const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
-              ],
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/splash_character.png',
+              height: 250,
             ),
-          ),
-        ],
+            const SizedBox(height: 40),
+            const Text(
+              '내 손에 보험',
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E3A8A),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '당신은 적절한 보상을 받으셨나요?',
+              style: GoogleFonts.notoSansKr(
+                fontSize: 18,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 40),
+            CircularProgressIndicator(
+              color: Colors.blue[800],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// MainScreen: 탭을 관리하는 껍데기 역할
+// MainScreen: 탭 관리 껍데기
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -108,12 +134,12 @@ class _MainScreenState extends State<MainScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '홈'),
           BottomNavigationBarItem(icon: Icon(Icons.question_answer), label: '챗봇'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: '마이페이지'),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Colors.blue[700],
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
       ),
@@ -153,84 +179,152 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('손에 보험', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: false,
-        actions: [IconButton(icon: const Icon(Icons.notifications_none), onPressed: () {})],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Colors.grey),
+            onPressed: () {},
+          )
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+              const SizedBox(height: 16),
+              const Text(
+                '무엇을 도와드릴까요?',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(30)),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
                 child: TextField(
                   controller: _searchController,
                   onSubmitted: _handleSearch,
                   decoration: const InputDecoration(
-                    hintText: '궁금한 내용을 검색하세요',
+                    hintText: '궁금한 내용을 검색하세요 (예: 보험금 청구)',
                     prefixIcon: Icon(Icons.search, color: Colors.grey),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 14),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   ),
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 32),
+              const Text(
+                '주요 서비스',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
               GridView.builder(
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.0,
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.9,
                 ),
                 itemCount: 6,
                 itemBuilder: (BuildContext context, int index) {
                   List<String> titles = ['보험금 청구', '보상금 계산', '교통사고 상담', '상해/질병 보상', '후유장해 평가', '서류 준비 도움'];
-                  List<IconData> icons = [Icons.receipt, Icons.calculate, Icons.directions_car, Icons.local_hospital, Icons.wheelchair_pickup, Icons.folder_open];
-                  return InkWell(
-                    onTap: () => print('${titles[index]} 기능 실행!'),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, 3))],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(icons[index], size: 40, color: Colors.blue[800]),
-                          const SizedBox(height: 8),
-                          Text(titles[index], textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black54)),
-                        ],
-                      ),
-                    ),
-                  );
+                  List<IconData> icons = [Icons.receipt_long, Icons.calculate, Icons.directions_car, Icons.local_hospital, Icons.wheelchair_pickup, Icons.folder_open];
+                  return _buildServiceItem(context, titles[index], icons[index]);
                 },
               ),
-              SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+              const SizedBox(height: 32),
               InkWell(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsultationScreen())),
+                borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, 3))],
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade600, Colors.blue.shade800],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(Icons.flash_on, color: Colors.blue, size: 24),
-                      SizedBox(width: 8),
-                      Text('실시간 보상상담 (24시간)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      Icon(Icons.flash_on, color: Colors.white, size: 24),
+                      SizedBox(width: 12),
+                      Text(
+                        '실시간 보상상담 (24시간)',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServiceItem(BuildContext context, String title, IconData icon) {
+    return InkWell(
+      onTap: () => print('$title 기능 실행!'),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.blue.withOpacity(0.1),
+              child: Icon(icon, size: 28, color: Colors.blue[800]),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -299,7 +393,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4.0),
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
         decoration: BoxDecoration(
-          color: isUser ? Colors.blue[600] : Colors.grey[200],
+          color: isUser ? Theme.of(context).primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -346,7 +440,7 @@ class MyPageScreen extends StatefulWidget {
 
 class _MyPageScreenState extends State<MyPageScreen> {
   bool _isLoggedIn = false;
-  final String _userName = "사용자";
+  final String _userName = "김민준";
 
   void _handleLoginResult(bool loginSuccess) {
     if (loginSuccess) {
@@ -390,11 +484,14 @@ class _MyPageScreenState extends State<MyPageScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('로그인이 필요합니다.', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.grey)),
-            const SizedBox(height: 20),
+            Icon(Icons.lock_outline, size: 80, color: Colors.grey[300]),
+            const SizedBox(height: 24),
+            const Text('로그인하고 더 많은 서비스를 이용하세요', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.black54)),
+            const SizedBox(height: 32),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: Colors.blue[700],
+                foregroundColor: Colors.white,
               ),
               onPressed: () {
                 Navigator.push(
@@ -406,7 +503,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   }
                 });
               },
-              child: const Text('로그인/회원가입', style: TextStyle(fontSize: 16)),
+              child: const Text('로그인 / 회원가입'),
             ),
           ],
         ),
@@ -416,20 +513,41 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
   Widget _buildLoggedInView() {
     return ListView(
+      padding: EdgeInsets.zero,
       children: [
-        UserAccountsDrawerHeader(
-          accountName: Text('${_userName}님', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          accountEmail: const Text('환영합니다!'),
-          currentAccountPicture: const CircleAvatar(
-            backgroundColor: Colors.white,
-            child: Icon(Icons.person, size: 50),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 60, 16, 32),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue.shade600, Colors.blue.shade800],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-          decoration: BoxDecoration(color: Colors.blue[700]),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.white,
+                child: Icon(Icons.person, size: 40, color: Colors.blue),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${_userName}님', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const SizedBox(height: 4),
+                  const Text('환영합니다!', style: TextStyle(fontSize: 16, color: Colors.white70)),
+                ],
+              )
+            ],
+          ),
         ),
-        ListTile(
-          leading: const Icon(Icons.history),
-          title: const Text('상담 이력 보기'),
-          trailing: const Icon(Icons.chevron_right),
+        const SizedBox(height: 16),
+        _buildMenuCard(
+          context,
+          icon: Icons.history,
+          title: '상담 이력 보기',
           onTap: () {
             Navigator.push(
               context,
@@ -437,14 +555,51 @@ class _MyPageScreenState extends State<MyPageScreen> {
             );
           },
         ),
-        const Divider(),
-        ListTile(
-          leading: const Icon(Icons.settings),
-          title: const Text('설정'),
-          trailing: const Icon(Icons.chevron_right),
+        _buildMenuCard(
+          context,
+          icon: Icons.person_outline,
+          title: '개인정보 수정',
+          onTap: () {},
+        ),
+        _buildMenuCard(
+          context,
+          icon: Icons.settings,
+          title: '설정',
           onTap: () {},
         ),
       ],
+    );
+  }
+
+  Widget _buildMenuCard(BuildContext context, {required IconData icon, required String title, required VoidCallback onTap}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+             boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.08),
+                blurRadius: 10,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.blue[700]),
+              const SizedBox(width: 16),
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const Spacer(),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -459,37 +614,51 @@ class LoginScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('로그인'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              decoration: InputDecoration(
-                labelText: '이메일',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 60),
+              const Text('환영합니다!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('로그인하여 모든 서비스를 이용하세요.', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              const SizedBox(height: 48),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: '이메일',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                keyboardType: TextInputType.emailAddress,
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: '비밀번호',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              const SizedBox(height: 16),
+              TextField(
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: '비밀번호',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[700],
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                child: const Text('로그인'),
               ),
-              onPressed: () {
-                Navigator.pop(context, true);
-              },
-              child: const Text('로그인', style: TextStyle(fontSize: 16)),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -514,18 +683,36 @@ class HistoryScreen extends StatelessWidget {
         title: const Text('상담 이력'),
       ),
       body: ListView.builder(
+        padding: const EdgeInsets.all(8.0),
         itemCount: _history.length,
         itemBuilder: (context, index) {
           final item = _history[index];
           return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            elevation: 2,
+            shadowColor: Colors.grey.withOpacity(0.2),
+            margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
-              leading: const Icon(Icons.receipt_long, color: Colors.blue),
-              title: Text(item['title']!),
-              subtitle: Text(item['date']!),
-              trailing: Text(
-                item['status']!,
-                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              leading: CircleAvatar(
+                backgroundColor: Colors.blue.withOpacity(0.1),
+                child: const Icon(Icons.receipt_long, color: Colors.blue),
+              ),
+              title: Text(item['title']!, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(item['date']!),
+              ),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  item['status']!,
+                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           );
@@ -541,6 +728,7 @@ class ConsultationScreen extends StatefulWidget {
   @override
   State<ConsultationScreen> createState() => _ConsultationScreenState();
 }
+
 class _ConsultationScreenState extends State<ConsultationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -558,14 +746,9 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('실시간 보상 상담', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
+        title: const Text('실시간 보상 상담'),
         backgroundColor: Colors.blue[800],
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -573,7 +756,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Center(
                   child: Text(
@@ -620,27 +803,22 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                 _buildInfoItem('실제 손해사정 시에는 해당 전문가에게 별도의 비용이 청구될 수 있습니다.'),
                 _buildInfoItem('민감한 개인정보는 1:1 상담 시에 전문가에게 직접 알려주세요.'),
                 const SizedBox(height: 40),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate() && _isAgreed) {
-                        print('상담 신청 완료');
-                        print('이름: ${_nameController.text}');
-                        print('전화번호: ${_phoneController.text}');
-                        Navigator.pop(context);
-                      } else if (!_isAgreed) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('개인정보 수집에 동의해야 합니다.')));
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[800],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('손해사정사 연결하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[800],
+                    foregroundColor: Colors.white,
                   ),
+                  onPressed: () {
+                    if (_formKey.currentState!.validate() && _isAgreed) {
+                      print('상담 신청 완료');
+                      print('이름: ${_nameController.text}');
+                      print('전화번호: ${_phoneController.text}');
+                      Navigator.pop(context);
+                    } else if (!_isAgreed) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('개인정보 수집에 동의해야 합니다.')));
+                    }
+                  },
+                  child: const Text('손해사정사 연결하기'),
                 ),
               ],
             ),
@@ -681,21 +859,13 @@ class SearchResultsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('검색 결과', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue[800],
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
+        title: Text('\'${searchQuery}\' 검색 결과'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('"${searchQuery}"에 대한 검색 결과입니다.', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
-            
             if (hasResults)
               Container(
                 padding: const EdgeInsets.all(16),
