@@ -166,12 +166,20 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _handleSearch(String query) {
+  Future<void> _handleSearch(String query) async {
     if (query.trim().isEmpty) return;
+    
+    final resultData = await ApiService.sendMessageToChatbot(query);
+
+    final replyContent = resultData['reply_content'] as String? ?? '데이터 없음';
+    final replyAnswer = resultData['reply_answer'] as String? ?? '데이터 없음';
+    
+    String formattedResult = '본문 내용:\n$replyContent\n\n추천 답변:\n$replyAnswer';
+    
     FocusScope.of(context).unfocus();
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => SearchResultsScreen(searchQuery: query)),
+      MaterialPageRoute(builder: (context) => SearchResultsScreen(resultData: formattedResult, searchQuery: query)),
     );
   }
 
@@ -856,16 +864,14 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
 // 검색 결과 화면
 class SearchResultsScreen extends StatelessWidget {
   final String searchQuery;
-  const SearchResultsScreen({super.key, required this.searchQuery});
+  final String resultData;
+  const SearchResultsScreen({super.key, required this.searchQuery, required this.resultData});
 
   @override
   Widget build(BuildContext context) {
-    const String resultData =
-        '보험금 청구는 질병, 상해, 사고 등 약관에 명시된 보험사고가 발생했을 때, 계약자가 보험사에 보상을 요청하는 정당한 권리입니다.\n\n'
-        '정확한 보험금 산정을 위해서는 사고나 질병을 입증할 수 있는 병원 서류(진단서, 영수증 등), 사고 사실 확인서, 그리고 기타 보험사가 요청하는 서류들을 꼼꼼히 준비하는 것이 중요합니다.\n\n'
-        '서류가 접수되면 보험사는 손해사정사를 통해 사고를 조사하고, 약관에 따라 보상 금액을 결정하여 지급 절차를 진행하게 됩니다. 전문가의 도움이 필요하다면 언제든 상담을 요청하세요.';
+        
     
-    bool hasResults = searchQuery.contains('보험금') || searchQuery.contains('사고');
+    bool hasResults = resultData.isNotEmpty && resultData != '데이터 없음';
 
     return Scaffold(
       appBar: AppBar(
