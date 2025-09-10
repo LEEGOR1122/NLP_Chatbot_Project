@@ -372,11 +372,13 @@ void _sendMessage(String text) async { // async 추가
     });
 
     // 2. ApiService를 통해 서버로 메시지 전송 및 응답 받기
-    final botReply = await ApiService.sendMessageToChatbot(text);
-    
+    final botReply = await ApiService.sendMessageToChatbot2(text);
+
+    String text2 = botReply['response'] ?? '죄송합니다. 답변을 받을 수 없습니다.';
+
     // 3. 서버로부터 받은 답변을 화면에 표시
     setState(() {
-      _messages.add({'text': botReply, 'isUser': false});
+      _messages.add({'text': text2, 'isUser': false});
     });
   }
 
