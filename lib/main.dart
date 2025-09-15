@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'api_service.dart';
-
+import 'package:flutter/services.dart';
+import 'package:my_chatbot_app/api_service.dart'; // ← 앱 종료용(SystemNavigator.pop) 사용
 
 void main() {
   runApp(const MyApp());
@@ -65,39 +65,66 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    // 이미지의 ‘최대’ 크기 한도 (화면 비율 기준)
+    final imageMaxWidth = size.width * 0.65;   // 화면 너비의 65%
+    final imageMaxHeight = size.height * 0.35; // 화면 높이의 35%
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/splash_character.png',
-              height: 250,
-            ),
-            const SizedBox(height: 40),
-            const Text(
-              '내 손에 보험',
-              style: TextStyle(
-                fontSize: 40,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E3A8A),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0), // 아주 작은 폰 여백 보호
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // ⬇️ 반응형 이미지: 비율 유지 + 최대 크기 제한
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: imageMaxWidth,
+                  maxHeight: imageMaxHeight,
+                ),
+                child: Image.asset(
+                  'assets/images/Online Doctor-pana.png',
+                  fit: BoxFit.contain,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '당신은 적절한 보상을 받으셨나요?',
-              style: GoogleFonts.notoSansKr(
-                fontSize: 18,
-                color: Colors.black54,
-                fontWeight: FontWeight.w500,
+
+              const SizedBox(height: 20),
+
+              const Text(
+                '내 손에 보험',
+                style: TextStyle(
+                  fontFamily: 'GothicA1',   // ← pubspec.yaml family명
+                  fontSize: 36,
+                  fontWeight: FontWeight.w800, // ExtraBold(800)와 매칭
+                  letterSpacing: 0.4,
+                  color: Color(0xFF1E3A8A),
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
-            CircularProgressIndicator(
-              color: Colors.blue[800],
-            ),
-          ],
+
+              const SizedBox(height: 12),
+
+              const Text(
+                '당신은 적절한 보상을 받으셨나요?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'NotoSansKR', // ← pubspec.yaml family명
+                  fontSize: 18,
+                  fontWeight: FontWeight.w300, // Light(300)와 매칭
+                  letterSpacing: 0.2,
+                  color: Colors.black54,
+                  height: 1.4,
+                ),
+              ),
+
+              const SizedBox(height: 40),
+
+              CircularProgressIndicator(
+                color: Colors.blue[800],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -127,23 +154,48 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  // 안드로이드 물리/제스처 뒤로가기 처리:
+  // - 홈이 아니면 홈으로 이동
+  // - 홈이면 '종료하시겠습니까?' 확인 페이지로 이동
+  Future<bool> _handleWillPop() async {
+    if (_selectedIndex != 0) {
+      setState(() {
+        _selectedIndex = 0;
+      });
+      return false; // 앱 종료 막고 홈으로만 이동
+    }
+    // 홈 탭이면 확인 페이지로 이동
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const ExitConfirmScreen()),
+    );
+    // result == true 이면 종료, 아니면 취소
+    if (result == true) {
+      SystemNavigator.pop(); // 앱 종료
+    }
+    return false; // 기본 종료 동작은 막음 (우리가 위에서 처리)
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '홈'),
-          BottomNavigationBarItem(icon: Icon(Icons.question_answer), label: '챗봇'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: '마이페이지'),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue[700],
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
+    return WillPopScope(
+      onWillPop: _handleWillPop,
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: _pages,
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '홈'),
+            BottomNavigationBarItem(icon: Icon(Icons.question_answer), label: '챗봇'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: '마이페이지'),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.blue[700],
+          unselectedItemColor: Colors.grey,
+          onTap: _onItemTapped,
+        ),
       ),
     );
   }
@@ -361,31 +413,33 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     super.dispose();
   }
 
-void _sendMessage(String text) async { // async 추가
+  void _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
     FocusScope.of(context).unfocus();
     _controller.clear();
-
-    // 1. 사용자 메시지를 먼저 화면에 표시
+    
     setState(() {
       _messages.add({'text': text, 'isUser': true});
+      _messages.add({'text': '답변을 준비하고 있어요...', 'isUser': false});
     });
-
+    
     // 2. ApiService를 통해 서버로 메시지 전송 및 응답 받기
     final botReply = await ApiService.sendMessageToChatbot2(text);
-
+ 
     String text2 = botReply['response'] ?? '죄송합니다. 답변을 받을 수 없습니다.';
 
     // 3. 서버로부터 받은 답변을 화면에 표시
     setState(() {
       _messages.add({'text': text2, 'isUser': false});
     });
+    
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // 탭 루트 화면이므로 뒤로가기 버튼 없음 (기본 디자인 유지)
         title: const Text('챗봇 상담'),
       ),
       body: Column(
@@ -480,6 +534,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // 탭 루트 화면이므로 뒤로가기 버튼 없음 (기본 디자인 유지)
         title: const Text('마이페이지'),
         actions: [
           if (_isLoggedIn)
@@ -624,7 +679,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 }
 
-// 로그인 페이지
+// 로그인 페이지 (← 뒤로가기 버튼 추가)
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
@@ -632,6 +687,11 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: '뒤로가기',
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('로그인'),
       ),
       body: SingleChildScrollView(
@@ -685,7 +745,7 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-// 상담 이력 페이지
+// 상담 이력 페이지 (← 뒤로가기 버튼 추가)
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
 
@@ -700,6 +760,11 @@ class HistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: '뒤로가기',
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('상담 이력'),
       ),
       body: ListView.builder(
@@ -742,7 +807,7 @@ class HistoryScreen extends StatelessWidget {
   }
 }
 
-// 상담 정보 입력 화면
+// 상담 정보 입력 화면 (← 뒤로가기 버튼 추가)
 class ConsultationScreen extends StatefulWidget {
   const ConsultationScreen({super.key});
   @override
@@ -766,6 +831,11 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: '뒤로가기',
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('실시간 보상 상담'),
         backgroundColor: Colors.blue[800],
         foregroundColor: Colors.white,
@@ -863,7 +933,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 }
 
-// 검색 결과 화면
+// 검색 결과 화면 (← 뒤로가기 버튼 추가)
 class SearchResultsScreen extends StatelessWidget {
   final String searchQuery;
   final String resultData;
@@ -877,7 +947,12 @@ class SearchResultsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('\'${searchQuery}\' 검색 결과'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: '뒤로가기',
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('\'$searchQuery\' 검색 결과'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -892,7 +967,7 @@ class SearchResultsScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(15),
                   boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, 3))],
                 ),
-                child: Text(resultData, style: const TextStyle(fontSize: 16, height: 1.5)),
+                child:  Text(resultData, style: const TextStyle(fontSize: 16, height: 1.5)),
               )
             else
               Expanded(
@@ -901,7 +976,7 @@ class SearchResultsScreen extends StatelessWidget {
                   children: [
                     Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
                     const SizedBox(height: 16),
-                    Text('"${searchQuery}"에 대한\n검색 결과를 찾을 수 없습니다.', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.grey[600], height: 1.4)),
+                    Text('"$searchQuery"에 대한\n검색 결과를 찾을 수 없습니다.', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, color: Colors.grey[600], height: 1.4)),
                     const SizedBox(height: 8),
                     Text('다른 검색어로 다시 시도해 보세요.', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
                   ],
@@ -914,3 +989,83 @@ class SearchResultsScreen extends StatelessWidget {
   }
 }
 
+/// ✅ '종료하시겠습니까?' 확인 페이지 (디자인 변경 없음, 심플)
+class ExitConfirmScreen extends StatelessWidget {
+  const ExitConfirmScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('확인'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: '뒤로가기',
+          onPressed: () => Navigator.pop(context, false), // 취소
+        ),
+      ),
+      body: Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '종료하시겠습니까?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '앱을 종료하면 진행 중인 작업이 중단될 수 있습니다.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 24),
+              Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[600], // 취소도 동일한 Elevated 스타일
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.pop(context, false), // 취소
+                    child: const Text('아니요', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[700],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.pop(context, true), // 종료
+                    child: const Text('예', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
