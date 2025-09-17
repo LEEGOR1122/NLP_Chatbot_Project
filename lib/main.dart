@@ -1,9 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'api_service.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart'; // 1. 카카오 SDK import 추가
 
 
-void main() {
+
+// void main() -> Future<void> main() async 로 변경
+Future<void> main() async { 
+  // 2. runApp() 호출 전 Flutter 엔진과 위젯 바인딩 보장
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 3. 카카오 SDK 초기화
+  KakaoSdk.init(
+    nativeAppKey: '208f6d61d6fda80aea6a10379857dab2', // 여기에 발급받은 네이티브 앱 키를 입력하세요.
+    
+  );
+
+
   runApp(const MyApp());
 }
 
@@ -628,6 +641,30 @@ class _MyPageScreenState extends State<MyPageScreen> {
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
+
+    // 실제 카카오 로그인 로직
+  Future<void> _loginWithKakao(BuildContext context) async {
+    try {
+      // 카카오톡 설치 여부 확인
+      bool isInstalled = await isKakaoTalkInstalled();
+      
+      // 카카오톡이 설치되어 있으면 카카오톡으로 로그인, 아니면 카카오계정으로 로그인
+      OAuthToken token = isInstalled
+          ? await UserApi.instance.loginWithKakaoTalk()
+          : await UserApi.instance.loginWithKakaoAccount();
+      
+      print('카카오 로그인 성공: ${token.accessToken}');
+
+      // 로그인 성공 시 true를 반환하며 이전 화면으로 돌아가기
+      Navigator.pop(context, true);
+
+    } catch (error) {
+      print('카카오 로그인 실패: $error');
+      // 로그인 실패 시 false를 반환
+      Navigator.pop(context, false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -677,6 +714,33 @@ class LoginScreen extends StatelessWidget {
                 },
                 child: const Text('로그인'),
               ),
+                            // --- 여기까지 기존 로그인 UI ---
+
+              const SizedBox(height: 24),
+
+              // --- "또는" 구분선 ---
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey[300])),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('또는', style: TextStyle(color: Colors.grey)),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey[300])),
+                ],
+              ),
+              // --- 여기까지 구분선 ---
+              
+              const SizedBox(height: 24),
+              
+              // --- 카카오 로그인 버튼 ---
+              InkWell(
+                onTap: () => _loginWithKakao(context), // 버튼 클릭 시 카카오 로그인 함수 호출
+                child: Image.asset(
+                  'assets/images/kakao_login_medium_wide.png', // 카카오 로그인 버튼 이미지
+                ),
+              ),
+              // --- 여기까지 카카오 로그인 버튼 ---
             ],
           ),
         ),

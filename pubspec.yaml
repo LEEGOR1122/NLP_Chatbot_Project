@@ -19,23 +19,18 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.9.0
+  sdk: '>=3.4.3 <4.0.0' # 호환성을 위해 버전을 이렇게 수정하는 것을 권장합니다.
 
-# Dependencies specify other packages that your package needs in order to work.
-# To automatically upgrade your package dependencies to the latest versions
-# consider running `flutter pub upgrade --major-versions`. Alternatively,
-# dependencies can be manually updated by changing the version numbers below to
-# the latest version available on pub.dev. To see which dependencies have newer
-# versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
     sdk: flutter
-    
+
   cupertino_icons: ^1.0.2
   google_fonts: ^6.2.1
   lottie: ^2.7.0
-  http: ^1.2.1 # <--- 이 줄을 추가하세요.
-  
+  http: ^1.2.1
+  kakao_flutter_sdk_user: ^1.9.1+2
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
