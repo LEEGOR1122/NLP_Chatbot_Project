@@ -40,7 +40,7 @@ static Future<Map<String, dynamic>> sendMessageToChatbot2(String message) async 
     final response = await http.post(url, headers: _headers, body: body);
     if (response.statusCode == 200) {
       final data = json.decode(utf8.decode(response.bodyBytes));
-      debugPrint('Response data: $data'); // 디버그 출력
+      
       return data; // 서버가 보낸 'reply' 값을 반환
     } else {
       return { 'msg': '서버와 통신 중 오류가 발생했습니다.' };
