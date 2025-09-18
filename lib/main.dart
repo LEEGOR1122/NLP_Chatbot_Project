@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'api_service.dart';
-import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart'; // 1. 카카오 SDK import 추가
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter/services.dart';
-import 'package:my_chatbot_app/api_service.dart'; // ← 앱 종료용(SystemNavigator.pop) 사용
 
-
-
-// void main() -> Future<void> main() async 로 변경
 Future<void> main() async { 
-  // 2. runApp() 호출 전 Flutter 엔진과 위젯 바인딩 보장
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 3. 카카오 SDK 초기화
   KakaoSdk.init(
-    nativeAppKey: '208f6d61d6fda80aea6a10379857dab2', // 여기에 발급받은 네이티브 앱 키를 입력하세요.
-    
+    nativeAppKey: '208f6d61d6fda80aea6a10379857dab2',
   );
 
   runApp(const MyApp());
@@ -80,19 +73,17 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    // 이미지의 ‘최대’ 크기 한도 (화면 비율 기준)
-    final imageMaxWidth = size.width * 0.65;   // 화면 너비의 65%
-    final imageMaxHeight = size.height * 0.35; // 화면 높이의 35%
+    final imageMaxWidth = size.width * 0.65;
+    final imageMaxHeight = size.height * 0.35;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0), // 아주 작은 폰 여백 보호
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // ⬇️ 반응형 이미지: 비율 유지 + 최대 크기 제한
               ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: imageMaxWidth,
@@ -103,37 +94,31 @@ class _SplashScreenState extends State<SplashScreen> {
                   fit: BoxFit.contain,
                 ),
               ),
-
               const SizedBox(height: 20),
-
               const Text(
                 '내 손에 보험',
                 style: TextStyle(
-                  fontFamily: 'GothicA1',   // ← pubspec.yaml family명
+                  fontFamily: 'GothicA1',
                   fontSize: 36,
-                  fontWeight: FontWeight.w800, // ExtraBold(800)와 매칭
+                  fontWeight: FontWeight.w800,
                   letterSpacing: 0.4,
                   color: Color(0xFF1E3A8A),
                 ),
               ),
-
               const SizedBox(height: 12),
-
               const Text(
                 '당신은 적절한 보상을 받으셨나요?',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'NotoSansKR', // ← pubspec.yaml family명
+                  fontFamily: 'NotoSansKR',
                   fontSize: 18,
-                  fontWeight: FontWeight.w300, // Light(300)와 매칭
+                  fontWeight: FontWeight.w300,
                   letterSpacing: 0.2,
                   color: Colors.black54,
                   height: 1.4,
                 ),
               ),
-
               const SizedBox(height: 40),
-
               CircularProgressIndicator(
                 color: Colors.blue[800],
               ),
@@ -167,27 +152,22 @@ class _MainScreenState extends State<MainScreen> {
       _selectedIndex = index;
     });
   }
-
-  // 안드로이드 물리/제스처 뒤로가기 처리:
-  // - 홈이 아니면 홈으로 이동
-  // - 홈이면 '종료하시겠습니까?' 확인 페이지로 이동
+  
   Future<bool> _handleWillPop() async {
     if (_selectedIndex != 0) {
       setState(() {
         _selectedIndex = 0;
       });
-      return false; // 앱 종료 막고 홈으로만 이동
+      return false;
     }
-    // 홈 탭이면 확인 페이지로 이동
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const ExitConfirmScreen()),
     );
-    // result == true 이면 종료, 아니면 취소
     if (result == true) {
-      SystemNavigator.pop(); // 앱 종료
+      SystemNavigator.pop();
     }
-    return false; // 기본 종료 동작은 막음 (우리가 위에서 처리)
+    return false;
   }
 
   @override
@@ -437,23 +417,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _messages.add({'text': '답변을 준비하고 있어요...', 'isUser': false});
     });
     
-    // 2. ApiService를 통해 서버로 메시지 전송 및 응답 받기
     final botReply = await ApiService.sendMessageToChatbot2(text);
- 
     String text2 = botReply['response'] ?? '죄송합니다. 답변을 받을 수 없습니다.';
 
-    // 3. 서버로부터 받은 답변을 화면에 표시
     setState(() {
+      _messages.removeLast(); // '답변 준비중' 메시지 제거
       _messages.add({'text': text2, 'isUser': false});
     });
-    
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // 탭 루트 화면이므로 뒤로가기 버튼 없음 (기본 디자인 유지)
         title: const Text('챗봇 상담'),
       ),
       body: Column(
@@ -528,27 +504,58 @@ class MyPageScreen extends StatefulWidget {
 
 class _MyPageScreenState extends State<MyPageScreen> {
   bool _isLoggedIn = false;
-  final String _userName = "김민준";
+  User? _user; // 카카오 사용자 정보를 담을 변수
 
-  void _handleLoginResult(bool loginSuccess) {
-    if (loginSuccess) {
-      setState(() {
-        _isLoggedIn = true;
-      });
+  @override
+  void initState() {
+    super.initState();
+    // 앱 시작 시 토큰 유효성 검사로 자동 로그인 시도
+    _checkKakaoLoginStatus();
+  }
+
+  // 카카오 로그인 상태 확인
+  Future<void> _checkKakaoLoginStatus() async {
+    // 토큰이 있는지 확인
+    if (await AuthApi.instance.hasToken()) {
+      try {
+        // 토큰이 유효한지 확인하고 사용자 정보 가져오기
+        final token = await UserApi.instance.accessTokenInfo();
+        print('토큰 유효성 확인 성공: $token');
+        _updateUser(await UserApi.instance.me());
+      } catch (error) {
+        print('토큰 유효성 확인 실패: $error');
+        // 토큰 만료 등 문제 발생 시 로그아웃 처리
+        _logout();
+      }
     }
   }
-  
-  void _logout() {
+
+  // 사용자 정보 업데이트 및 로그인 상태 변경
+  void _updateUser(User user) {
     setState(() {
-      _isLoggedIn = false;
+      _isLoggedIn = true;
+      _user = user;
     });
   }
 
+  // 로그아웃 처리
+  Future<void> _logout() async {
+    try {
+      await UserApi.instance.logout();
+      print('로그아웃 성공');
+    } catch (error) {
+      print('로그아웃 실패: $error');
+    }
+    setState(() {
+      _isLoggedIn = false;
+      _user = null;
+    });
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // 탭 루트 화면이므로 뒤로가기 버튼 없음 (기본 디자인 유지)
         title: const Text('마이페이지'),
         actions: [
           if (_isLoggedIn)
@@ -561,42 +568,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
       ),
       body: _isLoggedIn 
         ? _buildLoggedInView() 
-        : _buildLoggedOutView(),
-    );
-  }
-
-  Widget _buildLoggedOutView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Icon(Icons.lock_outline, size: 80, color: Colors.grey[300]),
-            const SizedBox(height: 24),
-            const Text('로그인하고 더 많은 서비스를 이용하세요', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.black54)),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[700],
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                ).then((result) {
-                  if (result == true) {
-                    _handleLoginResult(true);
-                  }
-                });
-              },
-              child: const Text('로그인 / 회원가입'),
-            ),
-          ],
-        ),
-      ),
+        : LoginView(onLoginSuccess: _checkKakaoLoginStatus), // 로그인 성공 시 상태 재확인
     );
   }
 
@@ -604,39 +576,27 @@ class _MyPageScreenState extends State<MyPageScreen> {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 60, 16, 32),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue.shade600, Colors.blue.shade800],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+        UserAccountsDrawerHeader(
+          accountName: Text(
+            _user?.kakaoAccount?.profile?.nickname ?? '사용자', 
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)
           ),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 40, color: Colors.blue),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${_userName}님', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const SizedBox(height: 4),
-                  const Text('환영합니다!', style: TextStyle(fontSize: 16, color: Colors.white70)),
-                ],
-              )
-            ],
+          accountEmail: Text(_user?.kakaoAccount?.email ?? '이메일 정보 없음'),
+          currentAccountPicture: CircleAvatar(
+            backgroundImage: _user?.kakaoAccount?.profile?.profileImageUrl != null
+              ? NetworkImage(_user!.kakaoAccount!.profile!.profileImageUrl!)
+              : null,
+            backgroundColor: Colors.white,
+            child: _user?.kakaoAccount?.profile?.profileImageUrl == null
+              ? const Icon(Icons.person, size: 50)
+              : null,
           ),
+          decoration: BoxDecoration(color: Colors.blue[700]),
         ),
-        const SizedBox(height: 16),
-        _buildMenuCard(
-          context,
-          icon: Icons.history,
-          title: '상담 이력 보기',
+        ListTile(
+          leading: const Icon(Icons.history),
+          title: const Text('상담 이력 보기'),
+          trailing: const Icon(Icons.chevron_right),
           onTap: () {
             Navigator.push(
               context,
@@ -644,80 +604,168 @@ class _MyPageScreenState extends State<MyPageScreen> {
             );
           },
         ),
-        _buildMenuCard(
-          context,
-          icon: Icons.person_outline,
-          title: '개인정보 수정',
-          onTap: () {},
-        ),
-        _buildMenuCard(
-          context,
-          icon: Icons.settings,
-          title: '설정',
+        const Divider(),
+        ListTile(
+          leading: const Icon(Icons.settings),
+          title: const Text('설정'),
+          trailing: const Icon(Icons.chevron_right),
           onTap: () {},
         ),
       ],
     );
   }
+}
 
-  Widget _buildMenuCard(BuildContext context, {required IconData icon, required String title, required VoidCallback onTap}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-             boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.08),
-                blurRadius: 10,
+// 로그인 UI 위젯
+class LoginView extends StatelessWidget {
+  final VoidCallback onLoginSuccess;
+  const LoginView({super.key, required this.onLoginSuccess});
+
+  Future<void> _loginWithKakao(BuildContext context) async {
+    try {
+      bool isInstalled = await isKakaoTalkInstalled();
+      
+      OAuthToken token = isInstalled
+          ? await UserApi.instance.loginWithKakaoTalk()
+          : await UserApi.instance.loginWithKakaoAccount();
+      
+      print('카카오 로그인 성공: ${token.accessToken}');
+      onLoginSuccess();
+    } catch (error) {
+      print('카카오 로그인 실패: $error');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 60),
+            const Text('환영합니다!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text('로그인하여 모든 서비스를 이용하세요.', style: TextStyle(fontSize: 16, color: Colors.grey)),
+            const SizedBox(height: 48),
+            TextField(
+              decoration: InputDecoration(
+                labelText: '이메일',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.white,
               ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.blue[700]),
-              const SizedBox(width: 16),
-              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              const Spacer(),
-              const Icon(Icons.chevron_right, color: Colors.grey),
-            ],
-          ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: '비밀번호',
+                prefixIcon: const Icon(Icons.lock_outline),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[700],
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                // (시뮬레이션) 이메일/비밀번호 로그인 성공 처리
+                // 실제 구현 시에는 여기서 서버와 통신해야 합니다.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('이메일 로그인은 현재 지원되지 않습니다.'))
+                );
+              },
+              child: const Text('로그인'),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(child: Divider(color: Colors.grey[300])),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('또는', style: TextStyle(color: Colors.grey)),
+                ),
+                Expanded(child: Divider(color: Colors.grey[300])),
+              ],
+            ),
+            const SizedBox(height: 24),
+            InkWell(
+              onTap: () => _loginWithKakao(context),
+              child: Image.asset(
+                'assets/images/kakao_login_large_wide.png',
+              ),
+            ),
+            // ▼▼▼ [수정] 회원가입 링크 추가 ▼▼▼
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('아직 계정이 없으신가요?'),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                    );
+                  }, 
+                  child: const Text('회원가입'),
+                )
+              ],
+            )
+          ],
         ),
       ),
     );
   }
 }
 
-// 로그인 페이지 (← 뒤로가기 버튼 추가)
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+// ▼▼▼ [신규] 회원가입 페이지입니다 ▼▼▼
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
+  @override
+  State<SignUpScreen> createState() => _SignUpScreenState();
+}
 
-    // 실제 카카오 로그인 로직
-  Future<void> _loginWithKakao(BuildContext context) async {
-    try {
-      // 카카오톡 설치 여부 확인
-      bool isInstalled = await isKakaoTalkInstalled();
+class _SignUpScreenState extends State<SignUpScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  void _signUp() {
+    // 유효성 검사
+    if (_formKey.currentState!.validate()) {
+      // (시뮬레이션) 실제로는 여기서 서버에 회원가입 요청을 보냅니다.
+      print('회원가입 시도:');
+      print('이름: ${_nameController.text}');
+      print('이메일: ${_emailController.text}');
       
-      // 카카오톡이 설치되어 있으면 카카오톡으로 로그인, 아니면 카카오계정으로 로그인
-      OAuthToken token = isInstalled
-          ? await UserApi.instance.loginWithKakaoTalk()
-          : await UserApi.instance.loginWithKakaoAccount();
+      // 성공 메시지 보여주기
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('회원가입이 완료되었습니다. 로그인해주세요.')),
+      );
       
-      print('카카오 로그인 성공: ${token.accessToken}');
-
-      // 로그인 성공 시 true를 반환하며 이전 화면으로 돌아가기
-      Navigator.pop(context, true);
-
-    } catch (error) {
-      print('카카오 로그인 실패: $error');
-      // 로그인 실패 시 false를 반환
-      Navigator.pop(context, false);
+      // 로그인 화면으로 돌아가기
+      Navigator.pop(context);
     }
   }
 
@@ -725,84 +773,84 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: '뒤로가기',
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('로그인'),
+        title: const Text('회원가입'),
       ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 60),
-              const Text('환영합니다!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text('로그인하여 모든 서비스를 이용하세요.', style: TextStyle(fontSize: 16, color: Colors.grey)),
-              const SizedBox(height: 48),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: '이메일',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: '비밀번호',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[700],
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () {
-                  Navigator.pop(context, true);
-                },
-                child: const Text('로그인'),
-              ),
-                            // --- 여기까지 기존 로그인 UI ---
-
-              const SizedBox(height: 24),
-
-              // --- "또는" 구분선 ---
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('또는', style: TextStyle(color: Colors.grey)),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
+                const Text('새로운 계정 만들기', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 32),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: '이름',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  Expanded(child: Divider(color: Colors.grey[300])),
-                ],
-              ),
-              // --- 여기까지 구분선 ---
-              
-              const SizedBox(height: 24),
-              
-              // --- 카카오 로그인 버튼 ---
-              InkWell(
-                onTap: () => _loginWithKakao(context), // 버튼 클릭 시 카카오 로그인 함수 호출
-                child: Image.asset(
-                  'assets/images/kakao_login_medium_wide.png', // 카카오 로그인 버튼 이미지
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '이름을 입력해주세요.';
+                    }
+                    return null;
+                  },
                 ),
-              ),
-              // --- 여기까지 카카오 로그인 버튼 ---
-            ],
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: '이메일',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                   validator: (value) {
+                    if (value == null || !value.contains('@')) {
+                      return '올바른 이메일 형식이 아닙니다.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: '비밀번호',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                   validator: (value) {
+                    if (value == null || value.length < 6) {
+                      return '비밀번호는 6자 이상이어야 합니다.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: '비밀번호 확인',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                   validator: (value) {
+                    if (value != _passwordController.text) {
+                      return '비밀번호가 일치하지 않습니다.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _signUp,
+                  child: const Text('회원가입'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -810,26 +858,21 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-// 상담 이력 페이지 (← 뒤로가기 버튼 추가)
+// 상담 이력 페이지
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
 
   final List<Map<String, String>> _history = const [
-    {'title': '자동차 접촉사고 과실비율 문의', 'date': '2025-08-28', 'status': '답변 완료'},
-    {'title': '실손의료보험금 청구 서류 문의', 'date': '2025-08-15', 'status': '답변 완료'},
-    {'title': '상해 후유장해 평가 관련', 'date': '2025-07-30', 'status': '답변 완료'},
-    {'title': '질병 진단금 청구 가능 여부', 'date': '2025-07-02', 'status': '답변 완료'},
+    {'title': '자동차 접촉사고 과실비율 문의', 'date': '2025-09-18', 'status': '답변 완료'},
+    {'title': '실손의료보험금 청구 서류 문의', 'date': '2025-09-02', 'status': '답변 완료'},
+    {'title': '상해 후유장해 평가 관련', 'date': '2025-08-15', 'status': '답변 완료'},
+    {'title': '질병 진단금 청구 가능 여부', 'date': '2025-08-01', 'status': '답변 완료'},
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: '뒤로가기',
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text('상담 이력'),
       ),
       body: ListView.builder(
@@ -872,7 +915,7 @@ class HistoryScreen extends StatelessWidget {
   }
 }
 
-// 상담 정보 입력 화면 (← 뒤로가기 버튼 추가)
+// 상담 정보 입력 화면
 class ConsultationScreen extends StatefulWidget {
   const ConsultationScreen({super.key});
   @override
@@ -896,11 +939,6 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: '뒤로가기',
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text('실시간 보상 상담'),
         backgroundColor: Colors.blue[800],
         foregroundColor: Colors.white,
@@ -998,7 +1036,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 }
 
-// 검색 결과 화면 (← 뒤로가기 버튼 추가)
+// 검색 결과 화면
 class SearchResultsScreen extends StatelessWidget {
   final String searchQuery;
   final String resultData;
@@ -1007,16 +1045,10 @@ class SearchResultsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
         
-    
     bool hasResults = resultData.isNotEmpty && resultData != '데이터 없음';
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: '뒤로가기',
-          onPressed: () => Navigator.pop(context),
-        ),
         title: Text('\'$searchQuery\' 검색 결과'),
       ),
       body: Padding(
@@ -1054,7 +1086,7 @@ class SearchResultsScreen extends StatelessWidget {
   }
 }
 
-/// ✅ '종료하시겠습니까?' 확인 페이지 (디자인 변경 없음, 심플)
+/// '종료하시겠습니까?' 확인 페이지
 class ExitConfirmScreen extends StatelessWidget {
   const ExitConfirmScreen({super.key});
 
@@ -1099,34 +1131,34 @@ class ExitConfirmScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[600], // 취소도 동일한 Elevated 스타일
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[600],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () => Navigator.pop(context, false), // 취소
+                      child: const Text('아니요', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                    onPressed: () => Navigator.pop(context, false), // 취소
-                    child: const Text('아니요', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[700],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[700],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () => Navigator.pop(context, true), // 종료
+                      child: const Text('예', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                    onPressed: () => Navigator.pop(context, true), // 종료
-                    child: const Text('예', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             ],
           ),
         ),
