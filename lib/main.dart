@@ -728,6 +728,8 @@ class LoginView extends StatelessWidget {
 }
 
 // ▼▼▼ [신규] 회원가입 페이지입니다 ▼▼▼
+enum UserRole { client, expert }
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -742,6 +744,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  // [추가] 사용자가 선택한 역할을 저장하는 변수 (기본값은 고객)
+  UserRole _selectedRole = UserRole.client;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -752,19 +757,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _signUp() {
-    // 유효성 검사
     if (_formKey.currentState!.validate()) {
       // (시뮬레이션) 실제로는 여기서 서버에 회원가입 요청을 보냅니다.
       print('회원가입 시도:');
       print('이름: ${_nameController.text}');
       print('이메일: ${_emailController.text}');
+      // [추가] 선택한 가입 유형도 함께 출력
+      print('가입 유형: ${_selectedRole.toString()}'); 
       
-      // 성공 메시지 보여주기
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('회원가입이 완료되었습니다. 로그인해주세요.')),
       );
       
-      // 로그인 화면으로 돌아가기
       Navigator.pop(context);
     }
   }
@@ -786,6 +790,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 40),
                 const Text('새로운 계정 만들기', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 32),
+
+                // [추가] 사용자 유형 선택 버튼
+                const Text('가입 유형 선택', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ToggleButtons(
+                  isSelected: [_selectedRole == UserRole.client, _selectedRole == UserRole.expert],
+                  onPressed: (index) {
+                    setState(() {
+                      _selectedRole = index == 0 ? UserRole.client : UserRole.expert;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  fillColor: Colors.blue[100],
+                  selectedColor: Colors.blue[800],
+                  constraints: const BoxConstraints(minHeight: 40.0, minWidth: 100.0),
+                  children: const [
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('일반 고객')),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('전문가')),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // --- 여기까지 사용자 유형 선택 ---
+
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
