@@ -50,4 +50,49 @@ static Future<Map<String, dynamic>> sendMessageToChatbot2(String message) async 
   }
 }
 
+
+  // ▼▼▼ 여기에 새로운 함수들을 추가합니다. ▼▼▼
+
+// ▼▼▼ 카카오 로그인 함수를 아래 내용으로 수정 ▼▼▼
+static Future<Map<String, dynamic>> kakaoLogin(String accessToken) async {
+  final url = Uri.parse('$_baseUrl/api/auth/kakao'); 
+  
+  final response = await http.post(
+    url,
+    headers: _headers,
+    body: jsonEncode({'access_token': accessToken}), // 'authorization_code' -> 'access_token'
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+  throw Exception('Failed to login with Kakao: ${jsonDecode(response.body)['detail']}');
 }
+
+  // 자체 회원가입
+  static Future<Map<String, dynamic>> register({
+    required String email,
+    required String password,
+    required String nickname,
+  }) async {
+    final url = Uri.parse('$_baseUrl/api/auth/register'); // FastAPI 라우터 prefix에 맞게 경로 설정
+    
+    final response = await http.post(
+      url,
+      headers: _headers,
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+        'nickname': nickname,
+      }),
+    );
+
+    if (response.statusCode == 201) { // 회원가입 성공 코드는 201
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
+    throw Exception('Failed to register: ${jsonDecode(response.body)['detail']}');
+  }
+}
+
+
+

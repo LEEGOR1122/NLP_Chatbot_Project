@@ -615,20 +615,33 @@ class LoginView extends StatelessWidget {
   final VoidCallback onLoginSuccess;
   const LoginView({super.key, required this.onLoginSuccess});
 
-  Future<void> _loginWithKakao(BuildContext context) async {
-    try {
-      bool isInstalled = await isKakaoTalkInstalled();
-      
-      OAuthToken token = isInstalled
-          ? await UserApi.instance.loginWithKakaoTalk()
-          : await UserApi.instance.loginWithKakaoAccount();
-      
-      print('카카오 로그인 성공: ${token.accessToken}');
-      onLoginSuccess();
-    } catch (error) {
-      print('카카오 로그인 실패: $error');
+// ▼▼▼ 이 함수 전체를 아래 최종 코드로 교체하세요 ▼▼▼
+Future<void> _loginWithKakao(BuildContext context) async {
+  try {
+    // 1. [수정] 카카오 SDK로 로그인하고 'OAuthToken' 받기
+    bool isInstalled = await isKakaoTalkInstalled();
+    OAuthToken token = isInstalled
+        ? await UserApi.instance.loginWithKakaoTalk()
+        : await UserApi.instance.loginWithKakaoAccount();
+    
+    print('✅ 카카오 액세스 토큰 받기 성공: ${token.accessToken}');
+
+    // 2. ApiService를 호출하여 '액세스 토큰'을 서버에 전송
+    final serverResponse = await ApiService.kakaoLogin(token.accessToken);
+    print('✅ FastAPI 서버 로그인 성공: $serverResponse');
+
+    // 3. 부모 위젯(MyPageScreen)에 로그인 성공 알림
+    onLoginSuccess();
+
+  } catch (error) {
+    print('❌ 카카오 로그인 또는 서버 통신 실패: $error');
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('로그인에 실패했습니다: $error')),
+      );
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -745,22 +758,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
-
-  void _signUp() {
+  void _signUp() async { // async 키워드를 추가합니다.
     if (_formKey.currentState!.validate()) {
-      print('회원가입 시도:');
-      print('이름: ${_nameController.text}');
-      print('이메일: ${_emailController.text}');
-      print('가입 유형: ${_selectedRole.toString()}'); 
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('회원가입이 완료되었습니다. 로그인해주세요.')),
-      );
-      
-      Navigator.pop(context);
+
+
+      try {
+        // ApiService를 호출하여 서버에 회원가입 요청
+        await ApiService.register(
+          email: _emailController.text,
+          password: _passwordController.text,
+          nickname: _nameController.text,
+        );
+        
+        // 성공 시 메시지 표시 및 이전 화면으로 이동
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('회원가입이 완료되었습니다. 로그인해주세요.')),
+          );
+          Navigator.pop(context);
+        }
+
+      } catch (error) {
+        print('❌ 회원가입 실패: $error');
+        // 실패 시 사용자에게 에러 메시지 표시
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('회원가입에 실패했습니다: $error')),
+          );
+        }
+      }
+
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
