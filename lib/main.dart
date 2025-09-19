@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'api_service.dart';
+import 'api_service.dart'; // api_service.dart는 이 한 줄로만 import 합니다.
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter/services.dart';
 
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-        fontFamily: GoogleFonts.notoSansKr().fontFamily,
+        fontFamily: GoogleFonts.notoSansKr().fontFamily, // 앱 전체에 글꼴 적용
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
@@ -98,7 +98,9 @@ class _SplashScreenState extends State<SplashScreen> {
               const Text(
                 '내 손에 보험',
                 style: TextStyle(
-                  fontFamily: 'GothicA1',
+                  // [정리] fontFamily를 직접 지정하지 않아도 ThemeData의 GothicA1이 적용됩니다.
+                  // 만약 다른 폰트를 원하시면 여기에 지정하시면 됩니다.
+                  // fontFamily: 'GothicA1', 
                   fontSize: 36,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.4,
@@ -110,7 +112,8 @@ class _SplashScreenState extends State<SplashScreen> {
                 '당신은 적절한 보상을 받으셨나요?',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'NotoSansKR',
+                  // [정리] fontFamily를 직접 지정하지 않아도 ThemeData의 NotoSansKR이 적용됩니다.
+                  // fontFamily: 'NotoSansKR',
                   fontSize: 18,
                   fontWeight: FontWeight.w300,
                   letterSpacing: 0.2,
@@ -301,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 32),
               InkWell(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsultationScreen())),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const OfficeRecommendationScreen())),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: double.infinity,
@@ -421,7 +424,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     String text2 = botReply['response'] ?? '죄송합니다. 답변을 받을 수 없습니다.';
 
     setState(() {
-      _messages.removeLast(); // '답변 준비중' 메시지 제거
+      _messages.removeLast();
       _messages.add({'text': text2, 'isUser': false});
     });
   }
@@ -504,33 +507,26 @@ class MyPageScreen extends StatefulWidget {
 
 class _MyPageScreenState extends State<MyPageScreen> {
   bool _isLoggedIn = false;
-  User? _user; // 카카오 사용자 정보를 담을 변수
+  User? _user;
 
   @override
   void initState() {
     super.initState();
-    // 앱 시작 시 토큰 유효성 검사로 자동 로그인 시도
     _checkKakaoLoginStatus();
   }
 
-  // 카카오 로그인 상태 확인
   Future<void> _checkKakaoLoginStatus() async {
-    // 토큰이 있는지 확인
     if (await AuthApi.instance.hasToken()) {
       try {
-        // 토큰이 유효한지 확인하고 사용자 정보 가져오기
-        final token = await UserApi.instance.accessTokenInfo();
-        print('토큰 유효성 확인 성공: $token');
+        await UserApi.instance.accessTokenInfo();
         _updateUser(await UserApi.instance.me());
       } catch (error) {
         print('토큰 유효성 확인 실패: $error');
-        // 토큰 만료 등 문제 발생 시 로그아웃 처리
         _logout();
       }
     }
   }
 
-  // 사용자 정보 업데이트 및 로그인 상태 변경
   void _updateUser(User user) {
     setState(() {
       _isLoggedIn = true;
@@ -538,11 +534,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
     });
   }
 
-  // 로그아웃 처리
   Future<void> _logout() async {
     try {
       await UserApi.instance.logout();
-      print('로그아웃 성공');
     } catch (error) {
       print('로그아웃 실패: $error');
     }
@@ -568,7 +562,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
       ),
       body: _isLoggedIn 
         ? _buildLoggedInView() 
-        : LoginView(onLoginSuccess: _checkKakaoLoginStatus), // 로그인 성공 시 상태 재확인
+        : LoginView(onLoginSuccess: _checkKakaoLoginStatus),
     );
   }
 
@@ -677,8 +671,6 @@ class LoginView extends StatelessWidget {
                 foregroundColor: Colors.white,
               ),
               onPressed: () {
-                // (시뮬레이션) 이메일/비밀번호 로그인 성공 처리
-                // 실제 구현 시에는 여기서 서버와 통신해야 합니다.
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('이메일 로그인은 현재 지원되지 않습니다.'))
                 );
@@ -703,7 +695,6 @@ class LoginView extends StatelessWidget {
                 'assets/images/kakao_login_large_wide.png',
               ),
             ),
-            // ▼▼▼ [수정] 회원가입 링크 추가 ▼▼▼
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -727,7 +718,7 @@ class LoginView extends StatelessWidget {
   }
 }
 
-// ▼▼▼ [신규] 회원가입 페이지입니다 ▼▼▼
+// 회원가입 페이지
 enum UserRole { client, expert }
 
 class SignUpScreen extends StatefulWidget {
@@ -744,7 +735,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // [추가] 사용자가 선택한 역할을 저장하는 변수 (기본값은 고객)
   UserRole _selectedRole = UserRole.client;
 
   @override
@@ -758,11 +748,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   void _signUp() {
     if (_formKey.currentState!.validate()) {
-      // (시뮬레이션) 실제로는 여기서 서버에 회원가입 요청을 보냅니다.
       print('회원가입 시도:');
       print('이름: ${_nameController.text}');
       print('이메일: ${_emailController.text}');
-      // [추가] 선택한 가입 유형도 함께 출력
       print('가입 유형: ${_selectedRole.toString()}'); 
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -790,8 +778,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 40),
                 const Text('새로운 계정 만들기', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 32),
-
-                // [추가] 사용자 유형 선택 버튼
                 const Text('가입 유형 선택', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 ToggleButtons(
@@ -806,12 +792,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   selectedColor: Colors.blue[800],
                   constraints: const BoxConstraints(minHeight: 40.0, minWidth: 100.0),
                   children: const [
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('일반 고객')),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('의뢰인')),
                     Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('전문가')),
                   ],
                 ),
                 const SizedBox(height: 24),
-                // --- 여기까지 사용자 유형 선택 ---
 
                 TextFormField(
                   controller: _nameController,
@@ -1113,7 +1098,7 @@ class SearchResultsScreen extends StatelessWidget {
   }
 }
 
-/// '종료하시겠습니까?' 확인 페이지
+// '종료하시겠습니까?' 확인 페이지
 class ExitConfirmScreen extends StatelessWidget {
   const ExitConfirmScreen({super.key});
 
@@ -1193,3 +1178,310 @@ class ExitConfirmScreen extends StatelessWidget {
     );
   }
 }
+class OfficeRecommendationScreen extends StatelessWidget {
+  const OfficeRecommendationScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final offices = _dummyOffices; // 더미 데이터 5개
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('내 주변 손해사정사 추천'),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        itemCount: offices.length,
+        itemBuilder: (context, index) {
+          final o = offices[index];
+          return _OfficeCard(office: o);
+        },
+      ),
+    );
+  }
+}
+
+// 카드 위젯
+class _OfficeCard extends StatelessWidget {
+  final _Office office;
+  const _OfficeCard({required this.office});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더(이름 + 평점/리뷰수)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    office.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.star, size: 18, color: Colors.amber),
+                const SizedBox(width: 4),
+                Text(
+                  '${office.rating.toStringAsFixed(1)}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text('(${office.reviewCount})',
+                    style: const TextStyle(color: Colors.black45)),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // 태그(전문분야)
+            Wrap(
+              spacing: 8,
+              runSpacing: -6,
+              children: office.tags
+                  .map(
+                    (t) => Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.07),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        t,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[800],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 12),
+
+            // 연락처/주소
+            _infoRow(Icons.phone, office.phone),
+            const SizedBox(height: 6),
+            _infoRow(Icons.location_on, office.address),
+            const SizedBox(height: 6),
+            _infoRow(Icons.access_time, office.hours),
+            const SizedBox(height: 14),
+
+            // 이력(경력) 리스트
+            const Text(
+              '주요 이력',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...office.career.take(3).map(
+              (c) => Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.check, size: 16, color: Colors.blue[800]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        c,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.black87,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 하단 버튼들 (디자인만, 동작은 추후 연동)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      // TODO: url_launcher로 전화/카카오맵 연동 예정
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('연동 준비중입니다.')),
+                      );
+                    },
+                    icon: const Icon(Icons.map),
+                    label: const Text('카카오맵으로 보기'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // TODO: 추후 앱 내 상담 요청/문의 플로우 연결
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('문의 연결 준비중입니다.')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[700],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('문의하기'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.blue[800]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 13, color: Colors.black87),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// 모델 & 더미데이터
+class _Office {
+  final String name;
+  final double rating;
+  final int reviewCount;
+  final String phone;
+  final String address;
+  final String hours;
+  final List<String> tags;
+  final List<String> career;
+
+  _Office({
+    required this.name,
+    required this.rating,
+    required this.reviewCount,
+    required this.phone,
+    required this.address,
+    required this.hours,
+    required this.tags,
+    required this.career,
+  });
+}
+
+final _dummyOffices = <_Office>[
+  _Office(
+    name: '한빛 손해사정',
+    rating: 4.8,
+    reviewCount: 132,
+    phone: '02-123-4567',
+    address: '서울 강남구 테헤란로 123, 7층',
+    hours: '평일 09:00 ~ 18:00 (점심 12:30 ~ 13:30)',
+    tags: ['교통사고', '실손의료비', '상해/질병'],
+    career: [
+      '전직 손해보험사 손해사정 12년 경력',
+      '교통사고 과실분쟁 300+건 처리',
+      '실손보험 지급거절 이의신청 다수 성공',
+    ],
+  ),
+  _Office(
+    name: '바른 보상센터',
+    rating: 4.7,
+    reviewCount: 98,
+    phone: '02-234-5678',
+    address: '서울 서초구 서초대로 77길 45, 3층',
+    hours: '평일 09:00 ~ 18:00 / 토 10:00 ~ 14:00',
+    tags: ['후유장해', '산재', '교통사고'],
+    career: [
+      '후유장해 평가 전문 (사지/척추/신경계)',
+      '산재보상/장해급여 청구 경험 풍부',
+      '법률 자문 네트워크 보유',
+    ],
+  ),
+  _Office(
+    name: '케어라인 손해사정법인',
+    rating: 4.9,
+    reviewCount: 210,
+    phone: '02-456-7890',
+    address: '서울 마포구 양화로 21, 10층',
+    hours: '평일 09:30 ~ 18:30',
+    tags: ['실손의료비', '진단금', '보험분쟁'],
+    career: [
+      '대형 병원 제휴 상담 창구 운영',
+      '진단금 지급거절 분쟁 150+건 해결',
+      '보험금 산정/협상 전문팀 운영',
+    ],
+  ),
+  _Office(
+    name: '뉴브릿지 손해사정',
+    rating: 4.6,
+    reviewCount: 64,
+    phone: '031-555-1234',
+    address: '경기 성남시 분당구 불정로 45, 5층',
+    hours: '평일 09:00 ~ 18:00',
+    tags: ['배상책임', '재물', '기업보험'],
+    career: [
+      '기업 화재/누수/도난 등 재물 손해 정밀 산정',
+      '배상책임 보험 손해액 산정 자문',
+      '중소기업 단체 보상 프로세스 구축',
+    ],
+  ),
+  _Office(
+    name: '라이츠 손해사정',
+    rating: 4.8,
+    reviewCount: 85,
+    phone: '051-777-9999',
+    address: '부산 해운대구 센텀중앙로 97, 18층',
+    hours: '평일 09:00 ~ 18:00 (예약 시 연장 상담)',
+    tags: ['교통사고', '후유장해', '상해/질병'],
+    career: [
+      '교통사고 소송 자문 파트너십',
+      '중증 장해 평가 및 합의 컨설팅',
+      '의무기록 분석 전담팀 보유',
+    ],
+  ),
+];
