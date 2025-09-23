@@ -607,47 +607,62 @@ class MyPageScreen extends StatefulWidget {
   State<MyPageScreen> createState() => _MyPageScreenState();
 }
 
+// main.dart 파일의 _MyPageScreenState 클래스를 아래 코드로 전체 교체하세요.
+
 class _MyPageScreenState extends State<MyPageScreen> {
-  bool _isLoggedIn = false;
-  User? _user;
+  // 1. 카카오 User 모델 대신, 모든 사용자 정보를 담을 수 있는 Map으로 변경
+  Map<String, dynamic>? _userInfo;
+  bool get _isLoggedIn => _userInfo != null; // 로그인 여부를 _userInfo 유무로 판단
 
   @override
   void initState() {
     super.initState();
-    _checkKakaoLoginStatus();
+     _checkKakaoLoginStatusAtStart(); // 앱 시작 시 로그인 상태 확인
   }
 
-  Future<void> _checkKakaoLoginStatus() async {
+  // 2. 로그인 성공 시 호출될 범용 상태 업데이트 함수 (새로운 함수)
+  void _updateUserState(Map<String, dynamic> userData) {
+    // 서버 또는 카카오로부터 받은 사용자 정보를 userInfo에 저장하고 화면을 갱신
+    setState(() {
+      _userInfo = {
+        'nickname': userData['nickname'],
+        'email': userData['email'],
+        'profileImageUrl': userData['profileImageUrl'],
+      };
+    });
+    print('✅ 로그인 상태 업데이트 완료: ${userData['nickname']}');
+  }
+
+  // 3. 기존 카카오 로그인 확인 함수를 수정
+  Future<void>_checkKakaoLoginStatusAtStart() async {
     if (await AuthApi.instance.hasToken()) {
       try {
-        await UserApi.instance.accessTokenInfo();
-        _updateUser(await UserApi.instance.me());
-      } catch (error) {
-        print('토큰 유효성 확인 실패: $error');
-        _logout();
+        final kakaoUser = await UserApi.instance.me();
+        // 카카오 정보를 우리 앱의 Map 형식으로 변환하여 상태 업데이트 함수 호출
+        _updateUserState({
+          'nickname': kakaoUser.kakaoAccount?.profile?.nickname,
+          'email': kakaoUser.kakaoAccount?.email,
+          'profileImageUrl': kakaoUser.kakaoAccount?.profile?.profileImageUrl,
+        });
+      } catch (e) {
+        print('🚨 카카오 사용자 정보 조회 실패: $e');
+        await _logout(); // 실패 시 로그아웃 처리
       }
     }
-  }
-
-  void _updateUser(User user) {
-    setState(() {
-      _isLoggedIn = true;
-      _user = user;
-    });
   }
 
   Future<void> _logout() async {
     try {
       await UserApi.instance.logout();
-    } catch (error) {
-      print('로그아웃 실패: $error');
+    } catch (e) {
+      print('🚨 카카오 로그아웃 실패: $e');
     }
     setState(() {
-      _isLoggedIn = false;
-      _user = null;
+      _userInfo = null;
     });
+    print('✅ 로그아웃 완료');
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -662,30 +677,31 @@ class _MyPageScreenState extends State<MyPageScreen> {
             )
         ],
       ),
-      body: _isLoggedIn 
-        ? _buildLoggedInView() 
-        : LoginView(onLoginSuccess: _checkKakaoLoginStatus),
+      // 4. LoginView에 새로운 콜백 함수(_updateUserState)를 전달
+      //    (LoginView 코드도 잠시 후 수정해야 합니다)
+      body: _isLoggedIn
+          ? _buildLoggedInView()
+          : LoginView(onLoginSuccess: _updateUserState),
+          // LoginView(onLoginSuccess: _updateUserState), // 최종적으로 이 코드로 변경 예정
     );
   }
 
+  // 5. 로그인된 화면을 _userInfo Map 기반으로 그리도록 수정
   Widget _buildLoggedInView() {
+    final nickname = _userInfo?['nickname'] ?? '사용자';
+    final email = _userInfo?['email'] ?? '이메일 정보 없음';
+    final profileImageUrl = _userInfo?['profileImageUrl'];
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
         UserAccountsDrawerHeader(
-          accountName: Text(
-            _user?.kakaoAccount?.profile?.nickname ?? '사용자', 
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)
-          ),
-          accountEmail: Text(_user?.kakaoAccount?.email ?? '이메일 정보 없음'),
+          accountName: Text(nickname, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          accountEmail: Text(email),
           currentAccountPicture: CircleAvatar(
-            backgroundImage: _user?.kakaoAccount?.profile?.profileImageUrl != null
-              ? NetworkImage(_user!.kakaoAccount!.profile!.profileImageUrl!)
-              : null,
+            backgroundImage: profileImageUrl != null ? NetworkImage(profileImageUrl) : null,
             backgroundColor: Colors.white,
-            child: _user?.kakaoAccount?.profile?.profileImageUrl == null
-              ? const Icon(Icons.person, size: 50)
-              : null,
+            child: profileImageUrl == null ? const Icon(Icons.person, size: 50) : null,
           ),
           decoration: BoxDecoration(color: Colors.blue[700]),
         ),
@@ -713,37 +729,108 @@ class _MyPageScreenState extends State<MyPageScreen> {
 }
 
 // 로그인 UI 위젯
-class LoginView extends StatelessWidget {
-  final VoidCallback onLoginSuccess;
+// 기존 LoginView 클래스를 아래 코드로 전체 교체하세요.
+
+class LoginView extends StatefulWidget {
+  // 1. 콜백 함수가 Map 데이터를 받을 수 있도록 타입 변경
+  final Function(Map<String, dynamic>) onLoginSuccess;
   const LoginView({super.key, required this.onLoginSuccess});
 
-// ▼▼▼ 이 함수 전체를 아래 최종 코드로 교체하세요 ▼▼▼
-Future<void> _loginWithKakao(BuildContext context) async {
-  try {
-    // 1. [수정] 카카오 SDK로 로그인하고 'OAuthToken' 받기
-    bool isInstalled = await isKakaoTalkInstalled();
-    OAuthToken token = isInstalled
-        ? await UserApi.instance.loginWithKakaoTalk()
-        : await UserApi.instance.loginWithKakaoAccount();
-    
-    print('✅ 카카오 액세스 토큰 받기 성공: ${token.accessToken}');
+  @override
+  State<LoginView> createState() => _LoginViewState();
+}
 
-    // 2. ApiService를 호출하여 '액세스 토큰'을 서버에 전송
-    final serverResponse = await ApiService.kakaoLogin(token.accessToken);
-    print('✅ FastAPI 서버 로그인 성공: $serverResponse');
 
-    // 3. 부모 위젯(MyPageScreen)에 로그인 성공 알림
-    onLoginSuccess();
+class _LoginViewState extends State<LoginView> {
+  // 1. 이메일과 비밀번호 입력을 위한 컨트롤러와 로딩 상태 변수 추가
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  } catch (error) {
-    print('❌ 카카오 로그인 또는 서버 통신 실패: $error');
-    if (context.mounted) {
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // 2. 이메일/비밀번호 로그인 로직을 처리할 함수 구현
+  Future<void> _loginWithEmail() async {
+    // 이메일 또는 비밀번호가 비어있는지 확인
+    if (_emailController.text.trim().isEmpty || _passwordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('로그인에 실패했습니다: $error')),
+        const SnackBar(content: Text('이메일과 비밀번호를 모두 입력해주세요.')),
       );
+      return;
+    }
+
+    setState(() => _isLoading = true); // 로딩 시작, UI 갱신
+
+    try {
+      // ApiService 함수 호출하고 결과를 responseData에 저장
+      final responseData = await ApiService.loginWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      // [핵심] 서버 응답에서 'user_info' Map을 꺼내서 콜백으로 전달
+      if (mounted && responseData.containsKey('user_info')) {
+        widget.onLoginSuccess(responseData['user_info']);
+      } else {
+        // user_info가 없는 경우를 대비한 예외 처리
+        throw Exception('서버 응답에 사용자 정보가 없습니다.');
+      }
+
+    } catch (e) {
+      // 로그인 실패 시 에러 메시지를 SnackBar로 표시
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('로그인 실패: ${e.toString().replaceAll('Exception: ', '')}')),
+        );
+      }
+    } finally {
+      // 성공/실패 여부와 관계없이 로딩 상태 종료
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
-}
+// 기존 카카오 로그인 함수
+  Future<void> _loginWithKakao(BuildContext context) async {
+    try {
+      // 카카오 SDK로 로그인
+      bool isInstalled = await isKakaoTalkInstalled();
+      OAuthToken token = isInstalled
+          ? await UserApi.instance.loginWithKakaoTalk()
+          : await UserApi.instance.loginWithKakaoAccount();
+
+      // 우리 서버에 토큰 전송 (이 부분은 현재 로직에선 필수는 아님)
+      await ApiService.kakaoLogin(token.accessToken);
+      
+      // 카카오 SDK로 사용자 정보 가져오기
+      final kakaoUser = await UserApi.instance.me();
+
+      // [핵심] 카카오 유저 정보를 우리 앱의 Map 형식으로 변환하여 콜백으로 전달
+      if(mounted) {
+        widget.onLoginSuccess({
+          'nickname': kakaoUser.kakaoAccount?.profile?.nickname,
+          'email': kakaoUser.kakaoAccount?.email,
+          'profileImageUrl': kakaoUser.kakaoAccount?.profile?.profileImageUrl,
+        });
+      }
+    } catch (e) {
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('카카오 로그인 실패: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -758,7 +845,10 @@ Future<void> _loginWithKakao(BuildContext context) async {
             const SizedBox(height: 8),
             const Text('로그인하여 모든 서비스를 이용하세요.', style: TextStyle(fontSize: 16, color: Colors.grey)),
             const SizedBox(height: 48),
+
+            // ▼▼▼ 1. TextField에 컨트롤러 연결 ▼▼▼
             TextField(
+              controller: _emailController, // 이메일 컨트롤러 연결
               decoration: InputDecoration(
                 labelText: '이메일',
                 prefixIcon: const Icon(Icons.email_outlined),
@@ -770,6 +860,7 @@ Future<void> _loginWithKakao(BuildContext context) async {
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: _passwordController, // 비밀번호 컨트롤러 연결
               obscureText: true,
               decoration: InputDecoration(
                 labelText: '비밀번호',
@@ -780,17 +871,21 @@ Future<void> _loginWithKakao(BuildContext context) async {
               ),
             ),
             const SizedBox(height: 32),
+
+            // ▼▼▼ 2. ElevatedButton 로직 수정 ▼▼▼
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[700],
                 foregroundColor: Colors.white,
               ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('이메일 로그인은 현재 지원되지 않습니다.'))
-                );
-              },
-              child: const Text('로그인'),
+              onPressed: _isLoading ? null : _loginWithEmail, // 로딩 중일 때 비활성화, 아닐 때 함수 호출
+              child: _isLoading
+                  ? const SizedBox( // 로딩 중일 때 인디케이터 표시
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                    )
+                  : const Text('로그인'), // 평상시 텍스트 표시
             ),
             const SizedBox(height: 24),
             Row(
@@ -805,7 +900,8 @@ Future<void> _loginWithKakao(BuildContext context) async {
             ),
             const SizedBox(height: 24),
             InkWell(
-              onTap: () => _loginWithKakao(context),
+              // onTap: () => _loginWithKakao(context), // 카카오 로그인 함수도 _isLoading으로 비활성화 가능
+              onTap: _isLoading ? null : () => _loginWithKakao(context),
               child: Image.asset(
                 'assets/images/kakao_login_large_wide.png',
               ),

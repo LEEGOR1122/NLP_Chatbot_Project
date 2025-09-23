@@ -10,6 +10,12 @@ class ApiService {
     'Content-Type': 'application/json; charset=UTF-8',
   };
 
+    // ▼▼▼ 이 한 줄이 빠져서 오류가 발생했습니다! ▼▼▼
+  static const Map<String, String> _jsonHeaders = {
+    'Content-Type': 'application/json; charset=UTF-8',
+  };
+
+
 // 챗봇 메시지 전송 및 응답 받기 (POST)
 static Future<dynamic> sendMessageToChatbot(String message) async {
   final url = Uri.parse('$_baseUrl/api/chat');
@@ -69,30 +75,54 @@ static Future<Map<String, dynamic>> kakaoLogin(String accessToken) async {
   throw Exception('Failed to login with Kakao: ${jsonDecode(response.body)['detail']}');
 }
 
+  // 📌 이 함수가 없어서 오류가 발생했습니다!
   // 자체 회원가입
   static Future<Map<String, dynamic>> register({
     required String email,
     required String password,
     required String nickname,
   }) async {
-    final url = Uri.parse('$_baseUrl/api/auth/register'); // FastAPI 라우터 prefix에 맞게 경로 설정
-    
+    final url = Uri.parse('$_baseUrl/api/auth/register');
     final response = await http.post(
       url,
-      headers: _headers,
+      headers: _jsonHeaders,
       body: jsonEncode({
         'email': email,
         'password': password,
         'nickname': nickname,
       }),
     );
-
-    if (response.statusCode == 201) { // 회원가입 성공 코드는 201
+    if (response.statusCode == 201) {
       return jsonDecode(utf8.decode(response.bodyBytes));
     }
     throw Exception('Failed to register: ${jsonDecode(response.body)['detail']}');
   }
+
+  // ▼▼▼ 1단계: 이 함수를 추가하세요 ▼▼▼
+  // 이메일/비밀번호 로그인
+  static Future<Map<String, dynamic>> loginWithEmail(String email, String password) async {
+    final url = Uri.parse('$_baseUrl/api/auth/login'); // FastAPI의 로그인 엔드포인트
+
+    // FastAPI의 OAuth2PasswordRequestForm은 'application/x-www-form-urlencoded' 형식을 사용합니다.
+    // 따라서 헤더와 바디를 JSON이 아닌 형태로 전송해야 합니다.
+    // [수정] 서버가 JSON을 원하므로, 헤더와 바디를 JSON 형식으로 변경
+    final response = await http.post(
+      url,
+      headers: _jsonHeaders, // Form 헤더 대신 _jsonHeaders 사용
+      body: jsonEncode({     // jsonEncode를 사용해 Map을 JSON 문자열로 변환
+        'email': email,      // 'username' 대신 'email' 키를 사용할 가능성이 높음
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // 로그인 성공
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } else {
+      // 로그인 실패
+      final errorData = jsonDecode(utf8.decode(response.bodyBytes));
+      throw Exception('Failed to login: ${errorData['detail']}');
+    }
+  }
 }
-
-
 
