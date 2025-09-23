@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'api_service.dart'; // api_service.dart는 이 한 줄로만 import 합니다.
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
+import 'dart:math';
 
 Future<void> main() async { 
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,19 +28,30 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-        fontFamily: GoogleFonts.notoSansKr().fontFamily, // 앱 전체에 글꼴 적용
-        appBarTheme: const AppBarTheme(
+
+        // 🔹 전체 텍스트 테마를 NotoSansKR로 교체
+        textTheme: GoogleFonts.notoSansKrTextTheme(),
+
+        // 🔹 AppBar의 제목만 별도로 스타일 지정
+        appBarTheme: AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 1,
+          titleTextStyle: GoogleFonts.notoSansKr(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
+
+        // 🔹 버튼 스타일은 그대로 둠
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(vertical: 14),
-            textStyle: const TextStyle(
+            textStyle: GoogleFonts.notoSansKr( // 👈 여기서도 폰트 지정
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -304,7 +317,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 32),
               InkWell(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const OfficeRecommendationScreen())),
+                onTap: () => Navigator.push(context, 
+                // MaterialPageRoute(builder: (context) => const OfficeRecommendationScreen())), 기존 추천 목록 이동
+                MaterialPageRoute(builder: (context) => const ConsultationScreen()),
+                ),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: double.infinity,
@@ -327,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(Icons.flash_on, color: Colors.white, size: 24),
+                      FlashJitterIcon(size: 24, color: Colors.yellow),
                       SizedBox(width: 12),
                       Text(
                         '실시간 보상상담 (24시간)',
@@ -389,6 +405,92 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+class FlashJitterIcon extends StatefulWidget {
+  final double size;
+  final Color color;
+
+  const FlashJitterIcon({
+    super.key,
+    this.size = 24,
+    this.color = Colors.yellow,
+  });
+
+  @override
+  State<FlashJitterIcon> createState() => _FlashJitterIconState();
+}
+
+class _FlashJitterIconState extends State<FlashJitterIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctl;
+  late final Animation<double> _rot;
+  late final Animation<double> _dx;
+  late final Animation<double> _scale;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _ctl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800), // 모션 속도
+    );
+
+    _rot = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: -0.1, end: 0.1), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 0.1, end: -0.1), weight: 50),
+    ]).animate(CurvedAnimation(parent: _ctl, curve: Curves.easeInOut));
+
+    _dx = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: -2.0, end: 2.0), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 2.0, end: -2.0), weight: 50),
+    ]).animate(CurvedAnimation(parent: _ctl, curve: Curves.easeInOut));
+
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.1), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.1, end: 1.0), weight: 50),
+    ]).animate(CurvedAnimation(parent: _ctl, curve: Curves.easeInOut));
+
+    // 3초마다 한번씩 forward
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted) {
+        _ctl.forward(from: 0);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctl,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(_dx.value, 0),
+          child: Transform.rotate(
+            angle: _rot.value,
+            child: Transform.scale(
+              scale: _scale.value,
+              child: Icon(
+                Icons.flash_on,
+                size: widget.size,
+                color: widget.color,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 
 // 챗봇 화면
 class ChatbotScreen extends StatefulWidget {
@@ -1043,14 +1145,34 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                     backgroundColor: Colors.blue[800],
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate() && _isAgreed) {
-                      print('상담 신청 완료');
-                      print('이름: ${_nameController.text}');
-                      print('전화번호: ${_phoneController.text}');
-                      Navigator.pop(context);
+                      // 1) (모킹) 서버에 상담 요청을 보냈다고 가정하고 requestId 발급
+                      final requestId = await MockApiService.createRequest(
+                        name: _nameController.text,
+                        phone: _phoneController.text,
+                        region: '서울',       // 필요하면 폼에 필드 추가해서 바꾸면 됨
+                        category: '일반상담', // 필요하면 폼에 필드 추가해서 바꾸면 됨
+                      );
+
+                      if (!mounted) return;
+
+                      // 2) 안내 토스트
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('상담 요청이 접수되었습니다. 관련 전문가의 견적을 기다려주세요.')),
+                      );
+
+                      // 3) 견적 수신 화면으로 교체 이동 (뒤로가기 시 폼으로 안 돌아오게)
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OffersScreen(requestId: requestId),
+                        ),
+                      );
                     } else if (!_isAgreed) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('개인정보 수집에 동의해야 합니다.')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('개인정보 수집에 동의해야 합니다.')),
+                      );
                     }
                   },
                   child: const Text('손해사정사 연결하기'),
@@ -1520,3 +1642,209 @@ final _dummyOffices = <_Office>[
     ],
   ),
 ];
+/// ─────────────────────────────────────────────────
+/// Mock API (백엔드 없이 데모용)
+/// ─────────────────────────────────────────────────
+class MockApiService {
+  static final Random _rnd = Random();
+
+  static Future<String> createRequest({
+    required String name,
+    required String phone,
+    required String region,
+    required String category,
+    String? detail,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    return 'REQ-${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+static Stream<List<Map<String, dynamic>>> offersStream(String requestId) async* {
+  final List<Map<String, dynamic>> acc = [];
+  int count = 0;
+  
+  final expertNames = [
+    '한빛 손해사정',
+    '케어라인 보상센터',
+    '바른 보상파트너스',
+    '뉴브릿지 손해사정',
+    '라이츠 어드바이저',
+    '정도 보상컨설팅',
+    '서울 손해사정 법인',
+    '푸른길 보상센터',
+    '미래 보상연구소',
+    '정성 손해사정'
+  ];
+  // 👇 추가: 다양한 소개 문구
+  final messages = [
+    '보험분쟁 다수 해결, 신속 상담 가능합니다.',
+    '실손보험 청구 전문, 서류 검토 도와드립니다.',
+    '교통사고 과실분쟁 경험 풍부, 빠른 합의 지원.',
+    '후유장해 평가 자문 가능, 사례 다수 보유.',
+    '의무기록 분석 전담팀 보유, 투명한 절차 약속.',
+  ];
+
+  while (count < 5) {
+    await Future.delayed(const Duration(seconds: 2));
+    count++;
+
+    final price = (5 + _rnd.nextInt(15)) * 10000;   // 5~20만원
+    final rating = (35 + _rnd.nextInt(15)) / 10.0;  // 3.5~4.9
+    final expertId = 'EXP-${_rnd.nextInt(9999).toString().padLeft(4, '0')}';
+
+    acc.add({
+      'id': 'OFF-${DateTime.now().millisecondsSinceEpoch}',
+      'request_id': requestId,
+      'expert_id': expertId,
+      'expert_name': expertNames[_rnd.nextInt(expertNames.length)],
+      'rating': rating,
+      'review_count': 30 + _rnd.nextInt(150),
+      'price': price,
+      'message': messages[_rnd.nextInt(messages.length)], // 👈 랜덤 선택
+      'eta': '${10 + _rnd.nextInt(50)}분 내 응답',
+    });
+
+    yield List<Map<String, dynamic>>.from(acc);
+  }
+}
+
+
+  static Future<String> acceptOffer(String offerId) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return 'CONV-$offerId';
+  }
+}
+
+/// ─────────────────────────────────────────────────
+/// OffersScreen: 들어오는 견적 실시간 수신(모킹) → 수락 시 채팅 더미로 이동
+/// ─────────────────────────────────────────────────
+class OffersScreen extends StatefulWidget {
+  final String requestId;
+  const OffersScreen({super.key, required this.requestId});
+
+  @override
+  State<OffersScreen> createState() => _OffersScreenState();
+}
+
+class _OffersScreenState extends State<OffersScreen> {
+  StreamSubscription<List<Map<String, dynamic>>>? _sub;
+  final List<Map<String, dynamic>> _offers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = MockApiService.offersStream(widget.requestId).listen((list) {
+      if (!mounted) return;
+      setState(() {
+        _offers
+          ..clear()
+          ..addAll(list);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('도착한 견적'),
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text('요청: ${widget.requestId.split('-').last}'),
+            ),
+          ),
+        ],
+      ),
+      body: _offers.isEmpty
+          ? const Center(
+              child: Text(
+                '견적을 기다리는 중입니다...',
+                textAlign: TextAlign.center,
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(12),
+              itemBuilder: (_, i) {
+                final o = _offers[i];
+                return Card(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
+                  shadowColor: Colors.blue.withOpacity(0.15),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue[100],
+                      child: Icon(Icons.person, color: Colors.blue[700]),
+                    ),
+                    title: Text(
+                      '${o['expert_name']} · ★${o['rating']} (${o['review_count']})',
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.black87),
+                    ),
+                    subtitle: Text(
+                      '${o['price']}원 · ${o['eta']}\n${o['message']}',
+                      style: TextStyle(color: Colors.blueGrey[700]),
+                    ),
+                    isThreeLine: true,
+                    trailing: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[700],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                      onPressed: () async {
+                        final convId = await MockApiService.acceptOffer(o['id']);
+                        if (!mounted) return;
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => _SimpleChatScreen(
+                              conversationId: convId,
+                              expertName: o['expert_name'] as String,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('수락'),
+                    ),
+                  ),
+                );
+              },
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemCount: _offers.length,
+            ),
+    );
+  }
+}
+
+/// 아주 단순한 채팅 화면 더미(향후 실제 챗봇/채팅 UI로 교체)
+class _SimpleChatScreen extends StatelessWidget {
+  final String conversationId;
+  final String expertName;
+  const _SimpleChatScreen({
+    super.key,
+    required this.conversationId,
+    required this.expertName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('채팅 · $expertName')),
+      body: Center(
+        child: Text(
+          '대화방 ID: $conversationId\n(여기에 실제 채팅 UI를 연결하세요)',
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
