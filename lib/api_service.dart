@@ -12,7 +12,7 @@ class ApiService {
 
 // 챗봇 메시지 전송 및 응답 받기 (POST)
 static Future<dynamic> sendMessageToChatbot(String message) async {
-  final url = Uri.parse('$_baseUrl/chat');
+  final url = Uri.parse('$_baseUrl/api/chat');
   final body = json.encode({'message': message});
   
   try {
@@ -32,7 +32,7 @@ static Future<dynamic> sendMessageToChatbot(String message) async {
 
 // 챗봇 메시지 전송 및 응답 받기 (POST)
 static Future<Map<String, dynamic>> sendMessageToChatbot2(String message) async {
-  final url = Uri.parse('$_baseUrl/chatBot');
+  final url = Uri.parse('$_baseUrl/api/chatBot');
   final body = json.encode({'prompt': message});
   
   try {

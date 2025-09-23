@@ -1099,14 +1099,19 @@ class SearchResultsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (hasResults)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, 3))],
+              // 변경점: Expanded와 SingleChildScrollView를 사용하여 스크롤 가능하게 만듦
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 5, offset: const Offset(0, 3))],
+                    ),
+                    child: Text(resultData, style: const TextStyle(fontSize: 16, height: 1.5)),
+                  ),
                 ),
-                child:  Text(resultData, style: const TextStyle(fontSize: 16, height: 1.5)),
               )
             else
               Expanded(
